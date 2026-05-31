@@ -19,6 +19,11 @@ workflows/private/
 # Dependencies and package managers
 node_modules/
 .pnpm-store/
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
 
 # Build output
 dist/

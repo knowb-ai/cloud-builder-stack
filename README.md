@@ -19,29 +19,105 @@ The goal is to keep one clean reference place for:
 | [Base44](https://docs.base44.com/) | AI-assisted website and app building from prompts, fast prototypes, app publishing | Let non-specialist builders turn ideas into working apps quickly, then discuss product flow, UX, auth, data, and integrations | Base44 handles app design, databases, signups, permissions, and hosting behind the scenes. |
 | [Nebius AI Cloud](https://docs.nebius.com/) | GPU cloud infrastructure, model hosting, Kubernetes, object storage, MLflow, AI workloads | Run GPU-backed workshops, deploy models, host containers, store datasets/artifacts, and show production-style AI infrastructure | Nebius focuses on AI cloud infrastructure, including NVIDIA GPU VMs, GPU clusters, Kubernetes, object storage, and serverless AI jobs. |
 
-## Suggested Workshop Patterns
+## Quick Builder App Pattern
 
-### 1. AI Research Assistant
+Cloud Builder Stack apps should be planned as small deployable products, even when the first version is only for a workshop or hackathon.
 
-- Tavily retrieves current web context.
-- n8n coordinates search, summarization, notifications, and logging.
-- Base44 provides a quick user-facing app shell.
-- Nebius can host heavier inference or batch processing if needed.
+- Keep `backend/` and `frontend/` as separate top-level directories.
+- Use FastAPI as the default backend for routing, API endpoints, webhooks, auth callbacks, server-side secrets, and static frontend serving.
+- Use Jinja templates from the backend when the UI is small, mostly form-driven, or does not need a bundled JavaScript app.
+- Use a bundled JavaScript frontend when the UI is an SPA, has richer client state, or benefits from a framework build step.
+- Serve the frontend through FastAPI for simple single-service deploys: either render Jinja views directly or mount the built SPA assets as static files.
+- Keep provider keys and private integration logic in the backend. Do not expose tool API keys in browser code.
+- Plan for deployability from the start on starter-friendly platforms such as Render, Railway, or Vercel, while checking current plan limits before a public session.
 
-### 2. Voice-Enabled Agent
+### Recommended Project Shape
 
-- Gradium provides speech or voice interaction.
-- Tavily gives the agent current web knowledge.
-- n8n routes events between voice, search, CRM, docs, and messaging tools.
-- Base44 can host the demo UI or internal operator dashboard.
+```text
+.
+├── backend/
+│   ├── app/
+│   │   ├── main.py
+│   │   └── templates/
+│   │       └── index.html
+│   ├── requirements-dev.txt
+│   ├── requirements.txt
+│   └── README.md
+├── frontend/
+│   ├── src/
+│   │   └── main.jsx
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.js
+│   └── README.md
+├── README.md
+├── .env.example
+├── .gitignore
+└── LICENSE
+```
 
-### 3. Hackathon Builder Platform
+### Planning Heuristics
 
-- Base44 accelerates participant prototypes.
-- n8n gives teams reusable automation templates.
-- Tavily supports grounded AI features.
-- Nebius supports GPU workloads, hosted services, and shared infrastructure.
-- Gradium supports voice-first bonus tracks.
+- Choose Jinja when the main workflow is a few pages, forms, server-rendered results, admin views, or internal tools.
+- Choose an SPA when the app needs rich interaction, persistent client state, complex editing, dashboards, maps, voice interfaces, or multi-step user flows.
+- Keep integrations thin at first: one route, one service module, one environment variable group, and one visible user path.
+- Add n8n when orchestration needs to be inspectable, event-driven, or editable by non-developers.
+- Add Tavily when the app needs source-grounded web context.
+- Add Gradium when voice is part of the primary interaction, not just a novelty.
+- Add Nebius when the demo needs GPU infrastructure, model hosting, object storage, or production-style AI workloads.
+- Add Base44 when the fastest path is a prompt-built application shell or when non-specialist builders need to own the UI quickly.
+
+## Local Setup
+
+Create a Python virtual environment, install backend dependencies, install frontend dependencies, build the frontend, then serve everything through FastAPI.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+pip install -r backend/requirements-dev.txt
+
+cd frontend
+npm install
+npm run build
+cd ..
+
+uvicorn backend.app.main:app --reload
+```
+
+Open `http://localhost:8000`.
+
+The frontend build writes static assets to `frontend/dist`. The FastAPI app serves that directory when it exists, so the same backend process can serve API routes and the SPA on platforms that expect one web service.
+
+The same flow is available through `make`:
+
+```bash
+make setup
+make build
+make serve
+```
+
+## Deploy Shape
+
+Use the same build and serve sequence for simple deployments:
+
+```bash
+pip install -r backend/requirements.txt
+cd frontend && npm install && npm run build && cd ..
+uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+
+For split deployments, host the built frontend separately and keep FastAPI as the API backend. For single-service free-tier deploys, build the frontend during deploy and run the FastAPI serve command.
+
+## Performance Defaults
+
+The stack should stay easy to teach, but a few Rust-backed or speed-focused defaults are worth using:
+
+- Use `uv` when available for faster Python environment and dependency installs; keep `pip` commands documented as the universal fallback.
+- Use `ruff` for Python linting and formatting because it is fast enough to run during live builder sessions.
+- Use FastAPI with Pydantic v2 and `ORJSONResponse` for quick request validation and JSON responses.
+- Use Vite for frontend development and production builds.
+- Keep expensive provider calls behind backend routes so responses can be cached, streamed, queued, or rate-limited without changing frontend code.
 
 ## Repository Layout
 
@@ -51,8 +127,17 @@ The goal is to keep one clean reference place for:
 ├── .env.example
 ├── .gitignore
 ├── LICENSE
-└── docs/
-    └── workshop-template.md
+├── backend/
+│   ├── app/
+│   ├── requirements-dev.txt
+│   ├── requirements.txt
+│   └── README.md
+└── frontend/
+    ├── src/
+    ├── index.html
+    ├── package.json
+    ├── vite.config.js
+    └── README.md
 ```
 
 ## Environment Setup
@@ -87,6 +172,16 @@ This repo summarizes vendor documentation and public product information as of 2
 - Base44 developer platform docs: https://docs.base44.com/developers/home
 - Nebius AI Cloud docs: https://docs.nebius.com/
 - Gradium homepage and launch information: https://gradium.ai/
+- FastAPI docs: https://fastapi.tiangolo.com/
+- FastAPI static files docs: https://fastapi.tiangolo.com/tutorial/static-files/
+- Jinja templates docs: https://jinja.palletsprojects.com/
+- uv docs: https://docs.astral.sh/uv/
+- Ruff docs: https://docs.astral.sh/ruff/
+- orjson docs: https://github.com/ijl/orjson
+- Vite docs: https://vite.dev/
+- Render free deploy docs: https://render.com/free
+- Railway free trial docs: https://docs.railway.com/pricing/free-trial
+- Vercel pricing docs: https://vercel.com/docs/pricing
 
 ## Contributing
 
