@@ -9,8 +9,8 @@ Use it by picking one idea, shrinking it to a single user path, and deciding wha
 ## Count
 
 ```txt
-Raw named ideas, names, and project directions: 158
-Serious distinct app concepts after dedupe: around 70
+Raw named ideas, names, and project directions: 137
+Serious distinct app concepts after dedupe: around 60
 Short-session candidates worth revisiting first: around 5 to 7
 ```
 
@@ -467,73 +467,6 @@ A name for event scenario simulation. It would model event risks, dependencies, 
 
 ---
 
-## 11. Developer Learning Twin Direction
-
-### 138. Personalized Weekly Developer Learning Intelligence Pipeline
-A weekly automated system that reads developer sources, scores items against a developer profile, and produces a focused learning digest. This became the most dev-comfortable direction.
-
-### 139. LearningTwin
-A digital learning twin for lifelong technical learning. It tracks stack, goals, time budget, and preferences, then teaches what matters.
-
-### 140. YouLearn
-A human-facing learning twin name. Simple and direct, but maybe too generic.
-
-### 141. LearnYou
-A stranger learning-twin name. It emphasizes a system that understands the learner before teaching.
-
-### 142. TwinLearn
-A functional twin-learning name. Clear, but plain.
-
-### 143. StackTwin
-The strongest developer-specific learning-twin name. It communicates stack-awareness and personalized weekly learning.
-
-### 144. SkillTwin
-A broader skill-development twin. It could expand beyond developers later, but loses some technical clarity.
-
-### 145. DevTwin
-A direct developer twin name. Clear, but broad.
-
-### 146. YouStack
-A punchier name combining the user and their stack. It suggests the internet filtered through your technical context.
-
-### 147. TwinYou
-A poetic but slightly awkward twin name. It centers personalization but lacks developer clarity.
-
-### 148. LearnMirror
-A reflective learning-system name. It suggests mapping what the user knows, needs, and should learn next.
-
-### 149. SignalYou
-A signal-filtering name with personalization. Good vibe, less obviously learning-focused.
-
-### 150. SignalStack
-A strong technical name for stack-aware signal filtering. It sounds practical and developer-friendly.
-
-### 151. DevSignal
-A developer signal digest. Clear, but closer to newsletter territory.
-
-### 152. StackPulse
-A weekly pulse of what matters to a developer’s stack. Good name for the digest layer.
-
-### 153. LearnLoop
-A continuous learning loop name. Good for lifelong learning but less stack-specific.
-
-### 154. SkillRadar
-A radar for learning-relevant tech updates. Clear but somewhat generic.
-
-### 155. DevRadar
-A developer radar for tracking relevant technical changes. Useful but less distinctive.
-
-### 156. SignalPath
-A learning-path name focused on signal. Could work for the generated weekly curriculum.
-
-### 157. StackBrief
-A concise weekly brief for a developer’s stack. Functional, but less twin-oriented.
-
-### 158. LearnFeed
-A personalized learning feed. Clear, but risks sounding like another content feed.
-
----
-
 ## High-Potential Starting Points
 
 ### Faultline
@@ -554,14 +487,10 @@ A graph-based evidence system for journalism and research. Much stronger than Cl
 ### Client Context Memory Engine
 A memory system for client work. Useful as a practical retrieval, decision-log, and context-preservation project.
 
-### StackTwin
-A stack-aware developer learning twin. Cleanly aligned with serverless batch processing, relevance scoring, and weekly learning artifacts.
-
 ---
 
 ## Good Short-Session Starting Point
 
-### StackTwin or LearningTwin
-A personalized weekly developer learning intelligence pipeline. The user defines their stack, learning goals, time budget, and content preferences once. Every week the system searches the developer internet, scores hundreds of items for relevance, filters the noise, and produces a focused digest plus learning materials.
+### PopUpOps or EventSim
 
-This direction works well for a short builder session because it has a simple user profile, a repeatable ingestion pipeline, a scoring step, and a concrete weekly output. It can use serverless jobs for batch ingestion, relevance scoring, digest generation, and learning artifact creation. It can use serverless endpoints for interactive actions like scoring one link, explaining why something matters, generating a quiz, or updating the learner profile.
+Event operations ideas work well for short builder sessions because the inputs are familiar, the outputs are concrete, and the build can stay scoped to one event brief. A practical version can generate a run of show, risk map, volunteer assignments, vendor checklist, and promotion plan from a short event description.
