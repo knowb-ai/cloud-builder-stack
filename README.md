@@ -23,15 +23,66 @@ The goal is to keep one clean reference place for:
 
 Cloud Builder Stack apps should be planned as small deployable products, even when the first version is only for a workshop or hackathon.
 
-- Keep `backend/` and `frontend/` as separate top-level directories.
-- Use FastAPI as the default backend for routing, API endpoints, webhooks, auth callbacks, server-side secrets, and static frontend serving.
+- Keep `backend/` and `frontend/` as top-level pathway directories with README files by default.
+- Generate backend and frontend code only when the session needs it.
+- Use FastAPI as the default generated backend for routing, API endpoints, webhooks, auth callbacks, server-side secrets, and static frontend serving.
 - Use Jinja templates from the backend when the UI is small, mostly form-driven, or does not need a bundled JavaScript app.
 - Use a bundled JavaScript frontend when the UI is an SPA, has richer client state, or benefits from a framework build step.
 - Serve the frontend through FastAPI for simple single-service deploys: either render Jinja views directly or mount the built SPA assets as static files.
 - Keep provider keys and private integration logic in the backend. Do not expose tool API keys in browser code.
 - Plan for deployability from the start on starter-friendly platforms such as Render, Railway, or Vercel, while checking current plan limits before a public session.
 
-### Recommended Project Shape
+### On-Demand Scaffolds
+
+The repository does not commit frontend or backend boilerplate by default. Use `make` to generate only the shape needed for the current builder session.
+
+```bash
+make scaffold-backend
+```
+
+Generates a small FastAPI plus Jinja app.
+
+```bash
+make scaffold-frontend
+```
+
+Generates a Vite frontend only.
+
+```bash
+make scaffold-app
+```
+
+Generates FastAPI plus a Vite frontend served through the backend after build.
+
+The generic form is also available:
+
+```bash
+make init PATHWAY=fastapi-jinja
+make init PATHWAY=fastapi-vite
+```
+
+Scaffold commands refuse to overwrite existing generated files. If you intend to replace generated boilerplate, run the same command with `FORCE=1`.
+
+### Generated Project Shapes
+
+Default checkout:
+
+```text
+.
+├── backend/
+│   └── README.md
+├── frontend/
+│   └── README.md
+├── scripts/
+│   └── scaffold.py
+├── README.md
+├── .env.example
+├── .gitignore
+├── LICENSE
+└── Makefile
+```
+
+`make scaffold-app` generates:
 
 ```text
 .
@@ -50,10 +101,13 @@ Cloud Builder Stack apps should be planned as small deployable products, even wh
 │   ├── package.json
 │   ├── vite.config.js
 │   └── README.md
+├── scripts/
+│   └── scaffold.py
 ├── README.md
 ├── .env.example
 ├── .gitignore
-└── LICENSE
+├── LICENSE
+└── Makefile
 ```
 
 ### Planning Heuristics
@@ -81,43 +135,40 @@ Cloud Builder Stack apps should be planned as small deployable products, even wh
 
 ## Local Setup
 
-Create a Python virtual environment, install backend dependencies, install frontend dependencies, build the frontend, then serve everything through FastAPI.
+Generate the pathway needed for your demo, then install dependencies and run it.
+
+For a small server-rendered app:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r backend/requirements.txt
-pip install -r backend/requirements-dev.txt
-
-cd frontend
-npm install
-npm run build
-cd ..
-
-uvicorn backend.app.main:app --reload
+make scaffold-backend
+make setup-backend
+make serve
 ```
 
-Open `http://localhost:8000`.
-
-The frontend build writes static assets to `frontend/dist`. The FastAPI app serves that directory when it exists, so the same backend process can serve API routes and the SPA on platforms that expect one web service.
-
-The same flow is available through `make`:
+For a backend plus Vite app:
 
 ```bash
+make scaffold-app
 make setup
 make build
 make serve
 ```
 
+Open `http://localhost:8000`.
+
+For the generated FastAPI plus Vite pathway, the frontend build writes static assets to `frontend/dist`. The FastAPI app serves that directory when it exists, so the same backend process can serve API routes and the SPA on platforms that expect one web service.
+
 ## Deploy Shape
 
-Use the same build and serve sequence for simple deployments:
+After generating the FastAPI plus Vite pathway, use the same build and serve sequence for simple deployments:
 
 ```bash
 pip install -r backend/requirements.txt
 cd frontend && npm install && npm run build && cd ..
 uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}
 ```
+
+For the FastAPI plus Jinja pathway, skip the frontend install and build command.
 
 For split deployments, host the built frontend separately and keep FastAPI as the API backend. For single-service free-tier deploys, build the frontend during deploy and run the FastAPI serve command.
 
@@ -139,16 +190,12 @@ The stack should stay easy to teach, but a few Rust-backed or speed-focused defa
 ├── .env.example
 ├── .gitignore
 ├── LICENSE
+├── Makefile
+├── scripts/
+│   └── scaffold.py
 ├── backend/
-│   ├── app/
-│   ├── requirements-dev.txt
-│   ├── requirements.txt
 │   └── README.md
 └── frontend/
-    ├── src/
-    ├── index.html
-    ├── package.json
-    ├── vite.config.js
     └── README.md
 ```
 

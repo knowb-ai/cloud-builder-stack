@@ -1,8 +1,22 @@
 # Backend
 
-Use this directory for the FastAPI app.
+Use this directory for backend pathway notes by default. Generate a FastAPI app only when the builder session needs backend routes, server-side secrets, webhooks, or static frontend serving.
 
-Default responsibilities:
+## Generate
+
+```bash
+make scaffold-backend
+```
+
+This creates a small FastAPI plus Jinja app.
+
+```bash
+make scaffold-app
+```
+
+This creates FastAPI plus a Vite frontend that can be served by the backend after `make build`.
+
+Generated backend responsibilities usually include:
 
 - API routes and page routes
 - webhook endpoints
@@ -22,4 +36,4 @@ pip install -r backend/requirements.txt
 uvicorn backend.app.main:app --reload
 ```
 
-Build `frontend/dist` before using the backend as the SPA server.
+Build `frontend/dist` before using the generated backend as the SPA server.

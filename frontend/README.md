@@ -1,6 +1,20 @@
 # Frontend
 
-Use this directory for the app UI.
+Use this directory for frontend pathway notes by default. Generate a frontend only when the product needs a bundled JavaScript UI.
+
+## Generate
+
+```bash
+make scaffold-frontend
+```
+
+This creates a Vite frontend only.
+
+```bash
+make scaffold-app
+```
+
+This creates a Vite frontend plus a FastAPI backend that can serve the built frontend.
 
 Choose the smallest frontend that fits the product:
 
