@@ -58,14 +58,26 @@ Cloud Builder Stack apps should be planned as small deployable products, even wh
 
 ### Planning Heuristics
 
+- Choose a pathway, not the whole stack. A short session should prove one useful workflow with the fewest moving parts.
 - Choose Jinja when the main workflow is a few pages, forms, server-rendered results, admin views, or internal tools.
 - Choose an SPA when the app needs rich interaction, persistent client state, complex editing, dashboards, maps, voice interfaces, or multi-step user flows.
 - Keep integrations thin at first: one route, one service module, one environment variable group, and one visible user path.
+- For simple UI apps that call LLM adapters or cloud REST APIs, stick to install, build, and serve commands. Do not add Docker unless isolation is part of the lesson or deployment constraint.
 - Add n8n when orchestration needs to be inspectable, event-driven, or editable by non-developers.
 - Add Tavily when the app needs source-grounded web context.
 - Add Gradium when voice is part of the primary interaction, not just a novelty.
 - Add Nebius when the demo needs GPU infrastructure, model hosting, object storage, or production-style AI workloads.
 - Add Base44 when the fastest path is a prompt-built application shell or when non-specialist builders need to own the UI quickly.
+
+### Pathway Examples
+
+| Session shape | Minimal pathway | Avoid until needed |
+| --- | --- | --- |
+| Simple LLM or cloud API app | FastAPI route, one service module, Jinja or SPA frontend, `make setup`, `make build`, `make serve` | Docker, queues, databases, n8n |
+| Source-grounded assistant | FastAPI, Tavily service module, minimal UI, citation display | GPU hosting, workflow engine, auth |
+| Visual automation demo | n8n workflow plus a small FastAPI webhook or result viewer | Custom orchestration code, Kubernetes |
+| Voice-first prototype | FastAPI, Gradium integration, compact UI for controls/transcripts | Voice as an optional add-on to an unrelated app |
+| Cloud infrastructure lesson | Nebius resource setup, one deployable workload, clear teardown notes | Unused services or multi-cloud abstractions |
 
 ## Local Setup
 
