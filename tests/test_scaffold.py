@@ -67,6 +67,18 @@ class ScaffoldTest(unittest.TestCase):
             self.assertIn(b"symlink", result.stderr)
             self.assertFalse((backend / "main.go").exists())
 
+    def test_preflight_rejects_non_directory_parent_before_writing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            backend = Path(directory) / "backend"
+            backend.mkdir()
+            (backend / "app").write_text("user data")
+            command = [sys.executable, str(SCRIPT), "--pathway", "fastapi-jinja", "--root", directory]
+            result = subprocess.run(command, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b"Parent is not a directory", result.stderr)
+            self.assertEqual((backend / "app").read_text(), "user data")
+            self.assertFalse((backend / "requirements.txt").exists())
+
     @unittest.skipUnless(all(importlib.util.find_spec(name) for name in ("fastapi", "jinja2", "orjson")), "FastAPI dependencies are not installed")
     def test_spa_static_file_and_api_fallback(self):
         with tempfile.TemporaryDirectory() as directory:

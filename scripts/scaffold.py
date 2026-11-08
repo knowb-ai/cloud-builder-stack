@@ -548,10 +548,13 @@ def write_files(pathway: str, root: Path, force: bool) -> list[Path]:
     # Never follow symlinks in generated paths, even when force is requested.
     for relative_path in files:
         current = root
-        for part in Path(relative_path).parts:
+        parts = Path(relative_path).parts
+        for index, part in enumerate(parts):
             current = current / part
             if current.is_symlink():
                 raise SystemExit(f"Refusing to write through symlink: {current.relative_to(root)}")
+            if index < len(parts) - 1 and current.exists() and not current.is_dir():
+                raise SystemExit(f"Parent is not a directory: {current.relative_to(root)}")
 
     backend_markers = {
         "python-prototype": "backend/main.py",
