@@ -25,12 +25,23 @@ Cloud Builder Stack apps should be planned as small deployable products, even wh
 
 - Keep `backend/` and `frontend/` as top-level pathway directories with README files by default.
 - Generate backend and frontend code only when the session needs it.
-- Use FastAPI as the default generated backend for routing, API endpoints, webhooks, auth callbacks, server-side secrets, and static frontend serving.
+- Use FastAPI for UI apps with backend behavior; choose Go for a backend service and Python for a short learning prototype.
 - Use Jinja templates from the backend when the UI is small, mostly form-driven, or does not need a bundled JavaScript app.
 - Use a bundled JavaScript frontend when the UI is an SPA, has richer client state, or benefits from a framework build step.
 - Serve the frontend through FastAPI for simple single-service deploys: either render Jinja views directly or mount the built SPA assets as static files.
 - Keep provider keys and private integration logic in the backend. Do not expose tool API keys in browser code.
 - Plan for deployability from the start on starter-friendly platforms such as Render, Railway, or Vercel, while checking current plan limits before a public session.
+
+### Choose a pathway
+
+| Project shape | Pathway | Choice |
+| --- | --- | --- |
+| Short learning experiment | `python-prototype` | Python standard-library HTTP service; choose a durable stack from the app shape before extending it. |
+| UI with backend behavior | `fastapi-jinja` or `fastapi-vite` | FastAPI with a server-rendered or bundled frontend. Node builds the frontend only. |
+| Backend service | `go-service` | Go HTTP service. |
+| Measured performance-critical component | `rust-native` or `rust-wasm` | Opt-in Rust component; explicitly choose native for server use or WebAssembly for a compatible host. A threshold requires a representative workload. |
+
+The service examples expose `GET /api/health` with JSON `{"status":"ok"}`. Request handling and service logic have separate functions; add only the integrations required by the user flow, and keep credentials on the backend. The Rust example exposes a typed `u32` addition function with saturating arithmetic as an interface demonstration, not a performance claim. WebAssembly exports `component_add` with two 32-bit inputs and a 32-bit result.
 
 ### On-Demand Scaffolds
 
@@ -54,14 +65,19 @@ make scaffold-app
 
 Generates FastAPI plus a Vite frontend served through the backend after build.
 
+Use `make kicklauncher` for an interactive selection of the four project shapes. Rust requires an explicit native or WebAssembly target. The selector calls the same generator as `make init` and refuses to overwrite files.
+
 The generic form is also available:
 
 ```bash
 make init PATHWAY=fastapi-jinja
 make init PATHWAY=fastapi-vite
+make init PATHWAY=python-prototype
+make init PATHWAY=go-service
+make init PATHWAY=rust-native  # or rust-wasm, chosen explicitly
 ```
 
-Scaffold commands refuse to overwrite existing generated files. If you intend to replace generated boilerplate, run the same command with `FORCE=1`.
+Scaffold commands refuse to overwrite existing generated files. If you intend to replace generated boilerplate for the same pathway, run the same command with `FORCE=1`. A conflicting backend pathway or a symbolic link in a generated path is refused even with force; use a separate directory for a different backend.
 
 ### Generated Project Shapes
 
@@ -135,7 +151,7 @@ Default checkout:
 
 ## Local Setup
 
-Generate the pathway needed for your demo, then install dependencies and run it.
+Generate the pathway needed for your demo, then install dependencies and run it. The FastAPI commands below were verified with Python 3.12; the Vite build also requires Node and npm (Node 20.19 or later in the 20.x series, or Node 22.12 or later).
 
 For a small server-rendered app:
 
@@ -156,7 +172,55 @@ make serve
 
 Open `http://localhost:8000`.
 
+For local frontend development, run `make dev-backend` and `make dev-frontend` in separate terminals. Vite forwards `/api` requests to FastAPI on port 8000.
+
 For the generated FastAPI plus Vite pathway, the frontend build writes static assets to `frontend/dist`. The FastAPI app serves that directory when it exists, so the same backend process can serve API routes and the SPA on platforms that expect one web service.
+
+### Additional pathway commands
+
+Generate each pathway in a fresh checkout or empty target directory. `make init` writes to this checkout and refuses to overwrite existing scaffold files unless `FORCE=1` is explicitly supplied. These examples use the repository root as the working directory.
+
+```bash
+# Python prototype: Python 3; no install or build step
+make init PATHWAY=python-prototype
+python3 backend/main.py
+# In another terminal: curl http://127.0.0.1:8000/api/health
+```
+
+```bash
+# Go service: Go 1.22 or later; no external dependencies
+make init PATHWAY=go-service
+cd backend
+go build -o cloud-builder-service .
+./cloud-builder-service
+# In another terminal: curl http://127.0.0.1:8000/api/health
+```
+
+```bash
+# Native Rust component: Rust and Cargo; no external dependencies
+make init PATHWAY=rust-native
+cd component
+cargo run
+# Prints 5; embed example_component::add in the surrounding application.
+```
+
+```bash
+# WebAssembly component: Rust, Cargo, and the wasm32-unknown-unknown target
+# With rustup: rustup target add wasm32-unknown-unknown
+make init PATHWAY=rust-wasm
+cd component
+cargo build --release --target wasm32-unknown-unknown
+# Load target/wasm32-unknown-unknown/release/example_component.wasm in a compatible host;
+# For example, with Node:
+node -e 'WebAssembly.instantiate(require("fs").readFileSync(process.argv[1])).then(({instance}) => console.log(instance.exports.component_add(2, 3) >>> 0))' target/wasm32-unknown-unknown/release/example_component.wasm
+# Prints 5; JavaScript hosts should interpret the i32 result as unsigned with >>> 0.
+```
+
+Rust is offered as a component, not a replacement backend. Neither example establishes a performance threshold. See the [Go HTTP package](https://pkg.go.dev/net/http), [Python http.server](https://docs.python.org/3/library/http.server.html) (the prototype is for learning, not production), and [Rust WebAssembly target documentation](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html).
+
+### Scaffold checks
+
+Run `python3 -m unittest discover -s tests -v` from the repository root. Go and Cargo checks run when those tools are installed; FastAPI import checks run when its generated dependencies are installed in the Python environment. To include the WebAssembly execution check, set `CBS_WASM_SYSROOT` to a Rust sysroot with the `wasm32-unknown-unknown` target installed and have Node available. The frontend uses pinned direct dependencies and a lockfile; use `npm ci` for the locked install.
 
 ## Deploy Shape
 
@@ -164,7 +228,7 @@ After generating the FastAPI plus Vite pathway, use the same build and serve seq
 
 ```bash
 pip install -r backend/requirements.txt
-cd frontend && npm install && npm run build && cd ..
+cd frontend && npm ci && npm run build && cd ..
 uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}
 ```
 
