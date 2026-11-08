@@ -7,21 +7,26 @@ PATHWAY ?= fastapi-jinja
 FORCE ?= 0
 FORCE_FLAG := $(if $(filter 1,$(FORCE)),--force,)
 
-.PHONY: help setup setup-backend setup-frontend scaffold init scaffold-backend scaffold-frontend scaffold-app build serve dev-backend dev-frontend lint clean
+.PHONY: help kicklauncher setup setup-backend setup-frontend scaffold init scaffold-backend scaffold-frontend scaffold-app build serve dev-backend dev-frontend lint clean
 
 help:
 	@echo "Cloud Builder Stack"
 	@echo ""
 	@echo "Scaffold only the app shape you need:"
+	@echo "  make kicklauncher                  Interactive pathway selection"
 	@echo "  make scaffold-backend              FastAPI + Jinja starter"
 	@echo "  make scaffold-frontend             Vite frontend starter"
 	@echo "  make scaffold-app                  FastAPI + Vite starter"
-	@echo "  make init PATHWAY=fastapi-jinja    Choose a pathway explicitly"
+	@echo "  make init PATHWAY=<name>           python-prototype, fastapi-jinja, fastapi-vite,"
+	@echo "                                     go-service, rust-native, rust-wasm, vite-frontend"
 	@echo ""
 	@echo "After scaffolding:"
 	@echo "  make setup                         Install generated app dependencies"
 	@echo "  make build                         Build generated frontend"
 	@echo "  make serve                         Serve generated backend"
+
+kicklauncher:
+	$(PYTHON) scripts/kicklauncher.py
 
 setup:
 	@if [ ! -f backend/requirements.txt ] && [ ! -f frontend/package.json ]; then echo "No app scaffold found. Run 'make scaffold-backend', 'make scaffold-frontend', or 'make scaffold-app' first."; exit 1; fi
@@ -36,7 +41,7 @@ setup-backend:
 
 setup-frontend:
 	@if [ ! -f frontend/package.json ]; then echo "No frontend scaffold found. Run 'make scaffold-frontend' or 'make scaffold-app' first."; exit 1; fi
-	cd frontend && npm install
+	cd frontend && npm ci
 
 scaffold: init
 

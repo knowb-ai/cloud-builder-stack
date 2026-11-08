@@ -19,12 +19,10 @@ FILES: dict[str, dict[str, str]] = {
     "fastapi-jinja": {
         "backend/requirements.txt": clean(
             """
-            fastapi==0.115.6
+            fastapi==0.162.2
             uvicorn[standard]==0.34.0
-            jinja2==3.1.5
-            python-dotenv==1.0.1
-            pydantic-settings==2.7.1
-            orjson==3.10.13
+            jinja2==3.1.6
+            orjson==3.13.0
             """
         ),
         "backend/requirements-dev.txt": "ruff==0.9.2\n",
@@ -115,12 +113,10 @@ FILES: dict[str, dict[str, str]] = {
     "fastapi-vite": {
         "backend/requirements.txt": clean(
             """
-            fastapi==0.115.6
+            fastapi==0.162.2
             uvicorn[standard]==0.34.0
-            jinja2==3.1.5
-            python-dotenv==1.0.1
-            pydantic-settings==2.7.1
-            orjson==3.10.13
+            jinja2==3.1.6
+            orjson==3.13.0
             """
         ),
         "backend/requirements-dev.txt": "ruff==0.9.2\n",
@@ -152,10 +148,15 @@ FILES: dict[str, dict[str, str]] = {
                 return {"status": "ok"}
 
 
-            @app.get("/{full_path:path}", include_in_schema=False)
+            @app.get("/{full_path:path}", include_in_schema=False, response_model=None)
             async def serve_frontend(request: Request, full_path: str) -> FileResponse | Response:
-                if full_path.startswith("api/"):
+                if full_path == "api" or full_path.startswith("api/"):
                     return ORJSONResponse({"detail": "Not Found"}, status_code=404)
+
+                dist = FRONTEND_DIST.resolve()
+                requested_file = (dist / full_path).resolve()
+                if requested_file.is_relative_to(dist) and requested_file.is_file():
+                    return FileResponse(requested_file)
 
                 index_path = FRONTEND_DIST / "index.html"
                 if index_path.exists():
@@ -257,12 +258,12 @@ FILES: dict[str, dict[str, str]] = {
                 "preview": "vite preview --host 0.0.0.0"
               },
               "dependencies": {
-                "react": "latest",
-                "react-dom": "latest"
+                "react": "19.3.1",
+                "react-dom": "19.3.1"
               },
               "devDependencies": {
-                "@vitejs/plugin-react": "latest",
-                "vite": "latest"
+                "@vitejs/plugin-react": "6.2.1",
+                "vite": "8.3.6"
               }
             }
             """
@@ -407,6 +408,9 @@ FILES: dict[str, dict[str, str]] = {
 
             export default defineConfig({
               plugins: [react()],
+              server: {
+                proxy: { "/api": "http://127.0.0.1:8000" }
+              },
               build: {
                 outDir: "dist",
                 emptyOutDir: true
@@ -416,6 +420,120 @@ FILES: dict[str, dict[str, str]] = {
         ),
     },
 }
+
+
+FILES["go-service"] = {
+    "backend/go.mod": "module example.com/cloud-builder-service\n\ngo 1.22\n",
+    "backend/main.go": clean(
+        """
+        package main
+
+        import (
+            "encoding/json"
+            "log"
+            "net/http"
+            "os"
+            "time"
+        )
+
+        type healthResponse struct {
+            Status string `json:"status"`
+        }
+
+        func health() healthResponse {
+            return healthResponse{Status: "ok"}
+        }
+
+        func healthHandler(w http.ResponseWriter, r *http.Request) {
+            if r.Method != http.MethodGet {
+                w.Header().Set("Allow", http.MethodGet)
+                w.WriteHeader(http.StatusMethodNotAllowed)
+                return
+            }
+            w.Header().Set("Content-Type", "application/json")
+            _ = json.NewEncoder(w).Encode(health())
+        }
+
+        func main() {
+            port := os.Getenv("PORT")
+            if port == "" { port = "8000" }
+            mux := http.NewServeMux()
+            mux.HandleFunc("/api/health", healthHandler)
+            server := &http.Server{Addr: ":" + port, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
+            log.Fatal(server.ListenAndServe())
+        }
+        """
+    ),
+}
+
+
+FILES["python-prototype"] = {
+    "backend/main.py": clean(
+        """
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        import json
+        import os
+
+
+        def health() -> dict[str, str]:
+            return {"status": "ok"}
+
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self) -> None:
+                if self.path != "/api/health":
+                    self.send_error(404)
+                    return
+                body = json.dumps(health()).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+
+        if __name__ == "__main__":
+            HTTPServer(("127.0.0.1", int(os.environ.get("PORT", "8000"))), Handler).serve_forever()
+        """
+    ),
+}
+
+RUST_LIB = clean(
+    """
+    /// A small typed boundary to replace with a measured workload.
+    pub fn add(left: u32, right: u32) -> u32 {
+        left.saturating_add(right)
+    }
+    """
+)
+FILES["rust-native"] = {
+    "component/Cargo.toml": '[package]\nname = "example_component"\nversion = "0.1.0"\nedition = "2021"\n',
+    "component/src/lib.rs": RUST_LIB,
+    "component/src/main.rs": clean(
+        """
+        fn main() {
+            println!("{}", example_component::add(2, 3));
+        }
+        """
+    ),
+}
+FILES["rust-wasm"] = {
+    "component/Cargo.toml": '[package]\nname = "example_component"\nversion = "0.1.0"\nedition = "2021"\n\n[lib]\ncrate-type = ["cdylib", "rlib"]\n',
+    "component/src/lib.rs": RUST_LIB + clean(
+        """
+
+        /// WebAssembly ABI: two unsigned 32-bit inputs and a saturated result.
+        #[no_mangle]
+        pub extern "C" fn component_add(left: u32, right: u32) -> u32 {
+            add(left, right)
+        }
+        """
+    ),
+}
+
+FILES["fastapi-vite"]["frontend/package-lock.json"] = (
+    ROOT / "templates" / "frontend" / "package-lock.json"
+).read_text(encoding="utf-8")
 
 FILES["vite-frontend"] = {
     path: content
@@ -427,7 +545,32 @@ FILES["vite-frontend"] = {
 def write_files(pathway: str, root: Path, force: bool) -> list[Path]:
     files = FILES[pathway]
     targets = [root / relative_path for relative_path in files]
+    # Never follow symlinks in generated paths, even when force is requested.
+    for relative_path in files:
+        current = root
+        for part in Path(relative_path).parts:
+            current = current / part
+            if current.is_symlink():
+                raise SystemExit(f"Refusing to write through symlink: {current.relative_to(root)}")
+
+    backend_markers = {
+        "python-prototype": "backend/main.py",
+        "go-service": "backend/go.mod",
+        "fastapi-jinja": "backend/app/main.py",
+        "fastapi-vite": "backend/app/main.py",
+    }
+    own_marker = backend_markers.get(pathway)
+    if own_marker:
+        conflicts = sorted({marker for marker in backend_markers.values()
+                            if marker != own_marker and (root / marker).exists()})
+        if conflicts:
+            raise SystemExit("Conflicting backend scaffold exists: " + ", ".join(conflicts)
+                             + ". Use a separate directory for a different pathway.")
+
     existing = [target for target in targets if target.exists()]
+    non_files = [target for target in existing if not target.is_file()]
+    if non_files:
+        raise SystemExit(f"Refusing to replace non-file: {non_files[0].relative_to(root)}")
 
     if existing and not force:
         formatted = "\n".join(f"  - {path.relative_to(root)}" for path in existing)

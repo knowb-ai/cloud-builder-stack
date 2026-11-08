@@ -26,6 +26,8 @@ __pycache__/
 .ruff_cache/
 
 # Build output
+backend/cloud-builder-service
+component/target/
 dist/
 build/
 .next/
