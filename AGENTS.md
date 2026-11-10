@@ -64,3 +64,19 @@ Before opening a PR or making a release, confirm:
 - New tool claims link to official or primary sources.
 - Workshop instructions avoid exposing private keys during screenshots or livestreams.
 - Any generated examples use fake IDs, fake domains, or clearly marked placeholders.
+
+## GitHub identity
+
+Source: KnowB agent engineering policy 2026-11-10.1 (knowledgeHQ).
+
+- Create issues and pull requests through the KnowB connector, which acts as
+  `knowb-kenobi[bot]`. Where the connector is unavailable, knowledgeHQ's
+  `mcp/scripts/as-kenobi.sh` is the only sanctioned direct path, for creating
+  issues and pull requests only.
+- Every comment, review and change request is posted as the owner's own login
+  (`valiantone`), never the bot. `as-kenobi.sh` refuses them.
+- Commits and pushes use the owner's git identity. End every commit with a
+  `Co-Authored-By` trailer for the model or agent, and one for
+  `valiantone <4111568+valiantone@users.noreply.github.com>`.
+- Request the owner as reviewer and assignee on every pull request. The bot
+  never merges.
